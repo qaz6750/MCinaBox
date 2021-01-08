@@ -486,19 +486,19 @@ public class CrossKeyboard implements OnscreenInput, KeyMap {
     }
 
     @Override
-    public void setEnable(boolean enable) {
-        this.enable = enable;
+    public void setEnabled(boolean enabled) {
+        this.enable = enabled;
         updateUI();
     }
 
     @Override
-    public boolean isEnable() {
+    public boolean isEnabled() {
         return this.enable;
     }
 
     private void updateUI() {
         if (enable) {
-            if (mController.getGrabbed()) {
+            if (mController.isGrabbed()) {
                 if (show == SHOW_ALL || show == SHOW_IN_GAME) {
                     this.setUiVisibility(View.VISIBLE);
                 } else {
@@ -523,6 +523,21 @@ public class CrossKeyboard implements OnscreenInput, KeyMap {
 
     public int getShowStat() {
         return this.show;
+    }
+
+    @Override
+    public void onPaused() {
+
+    }
+
+    @Override
+    public void onResumed() {
+
+    }
+
+    @Override
+    public Controller getController() {
+        return this.mController;
     }
 
     private static class CrossKeyboardConfigDialog extends Dialog implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, Dialog.OnCancelListener, CompoundButton.OnCheckedChangeListener {
@@ -791,7 +806,7 @@ public class CrossKeyboard implements OnscreenInput, KeyMap {
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
             if (buttonView == switchBounce) {
-                if (isChecked && mInput.isEnable()) {
+                if (isChecked && mInput.isEnabled()) {
                     ((CrossKeyboard) mInput).setKeyboardExtendVisiability(View.VISIBLE);
                 } else {
                     ((CrossKeyboard) mInput).setKeyboardExtendVisiability(View.INVISIBLE);

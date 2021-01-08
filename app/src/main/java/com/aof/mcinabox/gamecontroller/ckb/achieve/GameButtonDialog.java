@@ -77,6 +77,8 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
     private SwitchCompat switchKeep;
     private SwitchCompat switchHide;
     private SwitchCompat switchViewerFollow;
+    private SwitchCompat switchChars;
+    private EditText editChars;
 
     private RadioButton rbtShowAll;
     private RadioButton rbtShowInGame;
@@ -90,7 +92,7 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
     private Button buttonCopy;
 
     public final static int DEFAULT_MOVE_DISTANCE = 1;
-    public final static int DEFAULT_MARGIN_DISTANCE = 5;
+    public final static int DEFAULT_MARGIN_DISTANCE = 2;
     private final static String TAG = "GameButtonDialog";
 
 
@@ -148,6 +150,8 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
         this.switchKeep = findViewById(R.id.gamebutton_config_dialog_switch_keep);
         this.switchHide = findViewById(R.id.gamebutton_config_dialog_switch_hide);
         this.switchViewerFollow = findViewById(R.id.gamebutton_config_dialog_switch_viewerfollow);
+        this.switchChars = findViewById(R.id.gamebutton_config_dialog_switch_chars);
+        this.editChars = findViewById(R.id.gamebutton_config_dialog_edittext_chars);
 
         this.rbtShowAll = findViewById(R.id.gamebutton_config_dialog_rb_all);
         this.rbtShowInGame = findViewById(R.id.gamebutton_config_dialog_rb_in_game);
@@ -162,7 +166,7 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
 
         //设定控件属性
         seekbarAlpha.setMax(GameButton.MAX_ALPHA_SIZE_PT);
-        seekbarCornerSize.setMax(GameButton.MAX_CORNOR_SIZE_PT);
+        seekbarCornerSize.setMax(GameButton.MAX_CORNER_SIZE_PT);
         seekbarTextSize.setMax(GameButton.MAX_TEXT_SIZE_SP);
         spinnerDesign.setAdapter(new ArrayAdapter<>(mContext, android.R.layout.simple_spinner_item, Arrays.asList(CkbThemeMarker.DESIGNS)));
 
@@ -176,10 +180,10 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
         for (SeekBar s : new SeekBar[]{seekbarTextSize, seekbarCornerSize, seekbarAlpha}) {
             s.setOnSeekBarChangeListener(this);
         }
-        for (SwitchCompat s : new SwitchCompat[]{switchHide, switchKeep, switchViewerFollow}) {
+        for (SwitchCompat s : new SwitchCompat[]{switchHide, switchKeep, switchViewerFollow, switchChars}) {
             s.setOnCheckedChangeListener(this);
         }
-        for (EditText e : new EditText[]{editKeyName, editKeyWidth, editKeyHeight, editKeyLeft, editKeyTop, editBackColor, editTextColor}) {
+        for (EditText e : new EditText[]{editKeyName, editKeyWidth, editKeyHeight, editKeyLeft, editKeyTop, editBackColor, editTextColor, editChars}) {
             e.setOnFocusChangeListener(this);
         }
         for (RadioButton rbt : new RadioButton[]{rbtShowOutGame, rbtShowInGame, rbtShowAll}) {
@@ -187,6 +191,7 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
         }
         this.setOnCancelListener(this);
         this.spinnerDesign.setOnItemSelectedListener(this);
+        this.editChars.setVisibility(View.INVISIBLE);
 
         //从GameButton设定控件状态
         setUIStateFromGameButton();
@@ -207,12 +212,14 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
         editTextColor.setText(mGameButton.getTextColorHex());
         seekbarAlpha.setProgress(mGameButton.getAlphaSize() - GameButton.MIN_ALPHA_SIZE_PT);
         seekbarTextSize.setProgress(mGameButton.getTextProgress() - GameButton.MIN_TEXT_SIZE_SP);
-        seekbarCornerSize.setProgress(mGameButton.getCornerRadius() - GameButton.MIN_CORNOR_SIZE_PT);
+        seekbarCornerSize.setProgress(mGameButton.getCornerRadius() - GameButton.MIN_CORNER_SIZE_PT);
         switchKeep.setChecked(mGameButton.isKeep());
         switchHide.setChecked(mGameButton.isHide());
         viewBackColorPreview.setBackgroundColor(ColorUtils.hex2Int(mGameButton.getBackColorHex()));
         viewTextColorPreview.setBackgroundColor(ColorUtils.hex2Int(mGameButton.getTextColorHex()));
         switchViewerFollow.setChecked(mGameButton.isViewerFollow());
+        switchChars.setChecked(mGameButton.isInputChars());
+        editChars.setText(mGameButton.getChars());
         switch (mGameButton.getShow()) {
             case GameButton.SHOW_ALL:
                 rbtShowAll.setChecked(true);
@@ -248,7 +255,7 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
     }
 
     public void clearEditTextFocus() {
-        for (EditText et : new EditText[]{editKeyName, editBackColor, editTextColor, editKeyWidth, editKeyHeight, editKeyLeft, editKeyTop}) {
+        for (EditText et : new EditText[]{editKeyName, editBackColor, editTextColor, editKeyWidth, editKeyHeight, editKeyLeft, editKeyTop, editChars}) {
             et.clearFocus();
         }
     }
@@ -318,29 +325,29 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
         }
 
         if (v == buttonReduceLeft) {
-            float lPx = Float.parseFloat(editKeyLeft.getText().toString()) - DEFAULT_MARGIN_DISTANCE;
-            float[] result = mGameButton.setKeyPos(lPx, mGameButton.getKeyPos()[1]);
+            float lDp = Float.parseFloat(editKeyLeft.getText().toString()) - DEFAULT_MARGIN_DISTANCE;
+            float[] result = mGameButton.setKeyPos(lDp, mGameButton.getKeyPos()[1]);
             editKeyLeft.setText(String.valueOf(result[0]));
             editKeyTop.setText(String.valueOf(result[1]));
         }
 
         if (v == buttonPlusLeft) {
-            float lPx = Float.parseFloat(editKeyLeft.getText().toString()) + DEFAULT_MARGIN_DISTANCE;
-            float[] result = mGameButton.setKeyPos(lPx, mGameButton.getKeyPos()[1]);
+            float lDp = Float.parseFloat(editKeyLeft.getText().toString()) + DEFAULT_MARGIN_DISTANCE;
+            float[] result = mGameButton.setKeyPos(lDp, mGameButton.getKeyPos()[1]);
             editKeyLeft.setText(String.valueOf(result[0]));
             editKeyTop.setText(String.valueOf(result[1]));
         }
 
         if (v == buttonReduceTop) {
-            float tPx = Float.parseFloat(editKeyTop.getText().toString()) - DEFAULT_MARGIN_DISTANCE;
-            float[] result = mGameButton.setKeyPos(mGameButton.getKeyPos()[0], tPx);
+            float tDp = Float.parseFloat(editKeyTop.getText().toString()) - DEFAULT_MARGIN_DISTANCE;
+            float[] result = mGameButton.setKeyPos(mGameButton.getKeyPos()[0], tDp);
             editKeyLeft.setText(String.valueOf(result[0]));
             editKeyTop.setText(String.valueOf(result[1]));
         }
 
         if (v == buttonPlusTop) {
-            float tPx = Float.parseFloat(editKeyTop.getText().toString()) + DEFAULT_MARGIN_DISTANCE;
-            float[] result = mGameButton.setKeyPos(mGameButton.getKeyPos()[0], tPx);
+            float tDp = Float.parseFloat(editKeyTop.getText().toString()) + DEFAULT_MARGIN_DISTANCE;
+            float[] result = mGameButton.setKeyPos(mGameButton.getKeyPos()[0], tDp);
             editKeyLeft.setText(String.valueOf(result[0]));
             editKeyTop.setText(String.valueOf(result[1]));
         }
@@ -406,6 +413,15 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
             }
         }
 
+        if(buttonView == switchChars){
+            if(isChecked){
+                editChars.setVisibility(View.VISIBLE);
+            }else{
+                editChars.setVisibility(View.INVISIBLE);
+            }
+            mGameButton.setInputChars(isChecked);
+        }
+
     }
 
     @Override
@@ -418,7 +434,7 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
         }
 
         if (seekBar == this.seekbarCornerSize) {
-            int a = seekBar.getProgress() + GameButton.MIN_CORNOR_SIZE_PT;
+            int a = seekBar.getProgress() + GameButton.MIN_CORNER_SIZE_PT;
             textCornerSize.setText(String.valueOf(a));
             mGameButton.setCornerRadius(a);
         }
@@ -510,6 +526,14 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
             }
         }
 
+        if (v == editChars) {
+            if (!hasFocus) {
+                if (!mGameButton.setChars(editChars.getText().toString())) {
+                    editChars.setText(mGameButton.getChars());
+                }
+            }
+        }
+
     }
 
     private String originalKeyName;
@@ -527,6 +551,8 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
     private boolean originalAutoHide;
     private int originalDesignIndex;
     private int originalShow;
+    private String originalChars;
+    private boolean originalIsChars;
 
     private void recordGameButton() {
         this.originalKeyName = mGameButton.getKeyName();
@@ -543,6 +569,8 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
         this.originalViewerFollow = mGameButton.isViewerFollow();
         this.originalShow = mGameButton.getShow();
         this.originalDesignIndex = mGameButton.getDesignIndex();
+        this.originalIsChars = mGameButton.isInputChars();
+        this.originalChars = mGameButton.getChars();
     }
 
     private void restoreGameButon() {
@@ -560,6 +588,8 @@ public class GameButtonDialog extends Dialog implements View.OnClickListener, Se
         mGameButton.setShow(this.originalShow);
         mGameButton.setViewerFollow(this.originalViewerFollow);
         mGameButton.setDesignIndex(originalDesignIndex);
+        mGameButton.setChars(originalChars);
+        mGameButton.setInputChars(originalIsChars);
     }
 
     @Override

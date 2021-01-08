@@ -41,12 +41,11 @@ import com.aof.mcinabox.utils.dialog.support.DialogSupports;
 import java.util.HashMap;
 import java.util.Objects;
 
-import cosine.boat.BoatActivity;
-
 import static com.aof.mcinabox.gamecontroller.definitions.id.key.KeyEvent.KEYBOARD_BUTTON;
 import static com.aof.mcinabox.gamecontroller.definitions.id.key.KeyEvent.MARK_KEYNAME_SPLIT;
 import static com.aof.mcinabox.gamecontroller.definitions.id.key.KeyEvent.MOUSE_BUTTON;
 import static com.aof.mcinabox.gamecontroller.definitions.id.key.KeyEvent.MOUSE_POINTER;
+import static com.aof.mcinabox.gamecontroller.definitions.id.key.KeyEvent.MOUSE_POINTER_INC;
 import static com.aof.mcinabox.gamecontroller.definitions.id.key.KeyEvent.TYPE_WORDS;
 
 
@@ -69,14 +68,14 @@ public class VirtualController extends BaseController implements View.OnClickLis
     private final Translation mTranslation;
     private int screenWidth;
     private int screenHeight;
-    private OnscreenInput crossKeyboard;
-    private OnscreenInput itemBar;
-    private OnscreenInput onscreenKeyboard;
-    private OnscreenInput onscreenMouse;
-    private OnscreenInput custmoizeKeyboard;
-    private OnscreenInput onscreenTouchpad;
-    private OnscreenInput inputBox;
-    private OnscreenInput onscreenJoystick;
+    public OnscreenInput crossKeyboard;
+    public OnscreenInput itemBar;
+    public OnscreenInput onscreenKeyboard;
+    public OnscreenInput onscreenMouse;
+    public OnscreenInput custmoizeKeyboard;
+    public OnscreenInput onscreenTouchpad;
+    public OnscreenInput inputBox;
+    public OnscreenInput onscreenJoystick;
     private DragFloatActionButton dButton;
     private VirtualControllerSetting settingDialog;
     private ImageButton buttonCustomizeKeyboard;
@@ -121,7 +120,7 @@ public class VirtualController extends BaseController implements View.OnClickLis
         this.saveConfigToFile();
     }
 
-    private void init() {
+    public void init() {
         //初始化Setting对话框
         settingDialog = new VirtualControllerSetting(client.getActivity());
         settingDialog.create();
@@ -148,7 +147,7 @@ public class VirtualController extends BaseController implements View.OnClickLis
 
         //全部隐藏
         for (Input i : inputs) {
-            i.setEnable(false);
+            i.setEnabled(false);
         }
 
         //添加悬浮配置按钮
@@ -200,6 +199,14 @@ public class VirtualController extends BaseController implements View.OnClickLis
 
         checkboxLock.setOnCheckedChangeListener(this);
 
+        //绑定
+        bindViewWithInput();
+
+        //加载配置文件
+        loadConfigFromFile();
+    }
+
+    public void bindViewWithInput(){
         //绑定Input对象与ImageButton和Switch
         bindingViews = new HashMap<>();
         bindingViews.put(buttonCustomizeKeyboard, custmoizeKeyboard);
@@ -218,9 +225,6 @@ public class VirtualController extends BaseController implements View.OnClickLis
         bindingViews.put(switchTouchpad, onscreenTouchpad);
         bindingViews.put(buttonInputBox, inputBox);
         bindingViews.put(switchInputBox, inputBox);
-
-        //加载配置文件
-        loadConfigFromFile();
     }
 
     @Override
@@ -239,7 +243,7 @@ public class VirtualController extends BaseController implements View.OnClickLis
                 }
                 break;
             case MOUSE_POINTER:
-                sendKeyEvent(e);
+            case MOUSE_POINTER_INC:
             case TYPE_WORDS:
                 sendKeyEvent(e);
                 break;
@@ -264,8 +268,11 @@ public class VirtualController extends BaseController implements View.OnClickLis
             case TYPE_WORDS:
                 info = "Type: " + event.getType() + " Char: " + event.getChars();
                 break;
+            case MOUSE_POINTER_INC:
+                info = "Type: " + event.getType() + " IncX: " + event.getPointer()[0] + " IncY: " + event.getPointer()[1];
+                break;
             default:
-                info = "Unknown Type: ";
+                info = "Unknown: " + event.toString();
         }
         Log.e(event.getTag(), info);
     }
@@ -286,6 +293,11 @@ public class VirtualController extends BaseController implements View.OnClickLis
                 break;
             case TYPE_WORDS:
                 typeWords(e.getChars());
+                break;
+            case MOUSE_POINTER_INC:
+                if (e.getPointer() != null) {
+                    client.setPointerInc(e.getPointer()[0], e.getPointer()[1]);
+                }
             default:
         }
     }
@@ -318,7 +330,7 @@ public class VirtualController extends BaseController implements View.OnClickLis
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
         if (buttonView instanceof SwitchCompat && bindingViews.containsKey(buttonView)) {
-            (Objects.requireNonNull(bindingViews.get(buttonView))).setEnable(isChecked);
+            (Objects.requireNonNull(bindingViews.get(buttonView))).setEnabled(isChecked);
         }
         if (buttonView == checkboxLock) {
             if (isChecked) {

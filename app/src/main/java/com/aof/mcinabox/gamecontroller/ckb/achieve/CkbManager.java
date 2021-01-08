@@ -5,14 +5,20 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 
+import com.aof.mcinabox.R;
 import com.aof.mcinabox.gamecontroller.ckb.button.GameButton;
 import com.aof.mcinabox.gamecontroller.ckb.support.CallCustomizeKeyboard;
 import com.aof.mcinabox.gamecontroller.ckb.support.GameButtonArray;
+import com.aof.mcinabox.gamecontroller.ckb.support.GameButtonConverter;
 import com.aof.mcinabox.gamecontroller.ckb.support.GameButtonRecorder;
 import com.aof.mcinabox.gamecontroller.ckb.support.KeyboardRecorder;
 import com.aof.mcinabox.gamecontroller.controller.Controller;
 import com.aof.mcinabox.gamecontroller.definitions.manifest.AppManifest;
+import com.aof.mcinabox.utils.DisplayUtils;
+import com.aof.mcinabox.utils.dialog.DialogUtils;
+import com.aof.mcinabox.utils.dialog.support.DialogSupports;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -26,7 +32,7 @@ import java.io.Reader;
 public class CkbManager {
 
     private final static String TAG = "CkbManager";
-    public final static int MAX_KEYBOARD_SIZE = 80;
+    public final static int MAX_KEYBOARD_SIZE = 160;
     public final static int MIN_KEYBOARD_SIZE = 0;
     public final static String LAST_KEYBOARD_LAYOUT_NAME = "tmp";
     public final static int SHOW_BUTTON = 1;
@@ -172,13 +178,19 @@ public class CkbManager {
         KeyboardRecorder kr = new KeyboardRecorder();
         kr.setScreenArgs(mContext.getResources().getDisplayMetrics().widthPixels, mContext.getResources().getDisplayMetrics().heightPixels);
         kr.setRecorderDatas(gbrs);
+        kr.setVersionCode(KeyboardRecorder.VERSION_THIS);
 
-        Gson gson = new Gson();
-        String jsonString = gson.toJson(kr);
+        return outputFile(kr, fileName);
+    }
+
+    public static boolean outputFile(KeyboardRecorder  kr, String fileName){
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        StringBuilder jsonString = new StringBuilder(gson.toJson(kr));
+        jsonString.insert(0, "/*\n *This file is craeted by MCinaBox\n *Please DON'T edit the file if you don't know how it works.\n*/\n");
         try {
             FileWriter jsonWriter = new FileWriter(new File(AppManifest.MCINABOX_KEYBOARD + "/" + fileName + ".json"));
             BufferedWriter out = new BufferedWriter(jsonWriter);
-            out.write(jsonString);
+            out.write(jsonString.toString());
             out.close();
             return true;
         } catch (IOException e) {
@@ -208,6 +220,18 @@ public class CkbManager {
             kr = gson.fromJson(reader, KeyboardRecorder.class);
         } catch (Exception e) {
             e.printStackTrace();
+            //当失败时尝试通过加载旧版的按键
+            DialogUtils.createBothChoicesDialog(mContext, mContext.getString(R.string.title_note), mContext.getString(R.string.tips_try_to_convert_keyboard_layout), mContext.getString(R.string.title_ok), mContext.getString(R.string.title_cancel), new DialogSupports(){
+                @Override
+                public void runWhenPositive() {
+                    super.runWhenPositive();
+                    if(new GameButtonConverter(mContext).output(file)){
+                        DialogUtils.createSingleChoiceDialog(mContext, mContext.getString(R.string.title_note), String.format(mContext.getString(R.string.tips_successed_to_convert_keyboard_file), fileName + "-new.json"), mContext.getString(R.string.title_ok), null);
+                    }else{
+                        DialogUtils.createSingleChoiceDialog(mContext, mContext.getString(R.string.title_note), mContext.getString(R.string.tips_failed_to_convert_keyboard_file), mContext.getString(R.string.title_ok), null);
+                    }
+                }
+            });
             return false;
         }
         GameButtonRecorder[] gbr;
@@ -215,6 +239,15 @@ public class CkbManager {
             gbr = kr.getRecorderDatas();
         } else {
             return false;
+        }
+
+        switch ( kr.getVersionCode() ){
+            case KeyboardRecorder.VERSION_UNKNOWN:
+                for(GameButtonRecorder tgbr : gbr){
+                    tgbr.keyPos[0] = DisplayUtils.getDpFromPx(mContext, tgbr.keyPos[0]);
+                    tgbr.keyPos[1] = DisplayUtils.getDpFromPx(mContext, tgbr.keyPos[1]);
+                }
+                break;
         }
         //清除全部按键
         clearKeyboard();

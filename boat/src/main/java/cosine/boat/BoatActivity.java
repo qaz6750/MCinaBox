@@ -134,7 +134,7 @@ public class BoatActivity extends AppCompatActivity implements View.OnSystemUiVi
 
     private native void nSurfaceDestroyed(Surface surface);
 
-    void setGrabCursor(boolean isGrabbed) {
+    public void setGrabCursor(boolean isGrabbed) {
         runOnUiThread(() -> boatInterface.setGrabCursor(isGrabbed));
     }
 
@@ -219,6 +219,18 @@ public class BoatActivity extends AppCompatActivity implements View.OnSystemUiVi
 
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        boatInterface.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        boatInterface.onResume();
+    }
+
     public interface IBoat {
 
         void onActivityCreate(BoatActivity boatActivity);
@@ -226,6 +238,10 @@ public class BoatActivity extends AppCompatActivity implements View.OnSystemUiVi
         void setGrabCursor(boolean isGrabbed);
 
         void onStop();
+
+        void onResume();
+
+        void onPause();
 
         boolean dispatchKeyEvent(KeyEvent event);
 

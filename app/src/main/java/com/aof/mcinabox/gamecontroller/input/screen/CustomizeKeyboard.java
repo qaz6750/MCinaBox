@@ -23,8 +23,8 @@ public class CustomizeKeyboard implements OnscreenInput, Controller, CallCustomi
     private final String TAG = "CustomKeyboard";
     private final int type = KEYBOARD_BUTTON;
 
-    private CkbManager mManager;
-    private CkbManagerDialog mDialog;
+    public CkbManager mManager;
+    public CkbManagerDialog mDialog;
 
     @Override
     public boolean load(Context context, Controller controller) {
@@ -38,13 +38,13 @@ public class CustomizeKeyboard implements OnscreenInput, Controller, CallCustomi
     }
 
     @Override
-    public boolean isEnable() {
+    public boolean isEnabled() {
         return false;
     }
 
     @Override
-    public void setEnable(boolean enable) {
-        if (enable) {
+    public void setEnabled(boolean enabled) {
+        if (enabled) {
             mManager.showOrHideGameButtons(CkbManager.SHOW_BUTTON);
         } else {
             mManager.showOrHideGameButtons(CkbManager.HIDE_BUTTON);
@@ -102,8 +102,8 @@ public class CustomizeKeyboard implements OnscreenInput, Controller, CallCustomi
     }
 
     @Override
-    public boolean getGrabbed() {
-        return mController.getGrabbed();
+    public boolean isGrabbed() {
+        return mController.isGrabbed();
     }
 
     @Override
@@ -112,8 +112,13 @@ public class CustomizeKeyboard implements OnscreenInput, Controller, CallCustomi
     }
 
     @Override
-    public int[] getPointer() {
-        return mController.getPointer();
+    public int[] getGrabbedPointer() {
+        return mController.getGrabbedPointer();
+    }
+
+    @Override
+    public int[] getLossenPointer() {
+        return mController.getLossenPointer();
     }
 
     @Override
@@ -176,6 +181,20 @@ public class CustomizeKeyboard implements OnscreenInput, Controller, CallCustomi
         return View.VISIBLE;
     }
 
+    @Override
+    public void onPaused() {
+
+    }
+
+    @Override
+    public void onResumed() {
+
+    }
+
+    @Override
+    public Controller getController() {
+        return this.mController;
+    }
 }
 
 

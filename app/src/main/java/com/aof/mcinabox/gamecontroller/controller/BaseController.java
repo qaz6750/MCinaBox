@@ -8,18 +8,28 @@ import com.aof.mcinabox.gamecontroller.client.Client;
 import com.aof.mcinabox.gamecontroller.input.Input;
 
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public abstract class BaseController implements Controller {
     public ArrayList<Input> inputs;
     public Client client;
     private Context context;
-    private boolean isGrabbed = false;
     private final static String TAG = "BaseController";
+    private Timer mTimer;
+    private final static int DEFAULT_INTERVAL_TIME = 5000;
+    private int internalTime;
 
-    public BaseController(Client client) {
+    public BaseController(Client client, int intervalTime) {
         this.client = client;
         this.context = client.getActivity();
         inputs = new ArrayList<>();
+        this.internalTime = intervalTime;
+        createAutoSaveTimer();
+    }
+
+    public BaseController(Client client){
+        this(client, BaseController.DEFAULT_INTERVAL_TIME);
     }
 
     @Override
@@ -81,7 +91,6 @@ public abstract class BaseController implements Controller {
 
     @Override
     public void setGrabCursor(boolean isGrabbed) {
-        this.isGrabbed = isGrabbed;
         for (Input i : inputs) {
             i.setGrabCursor(isGrabbed);
         }
@@ -108,13 +117,13 @@ public abstract class BaseController implements Controller {
     }
 
     @Override
-    public boolean getGrabbed() {
-        return this.isGrabbed;
+    public boolean isGrabbed() {
+        return client.isGrabbed();
     }
 
     @Override
-    public int[] getPointer() {
-        return client.getPointer();
+    public int[] getGrabbedPointer() {
+        return client.getGrabbedPointer();
     }
 
     @Override
@@ -128,6 +137,40 @@ public abstract class BaseController implements Controller {
     public Client getClient() {
         return client;
     }
+
+    @Override
+    public void onPaused() {
+        if(mTimer != null)
+            mTimer.cancel();
+        for (Input i : inputs){
+            i.onPaused();
+        }
+    }
+
+    @Override
+    public void onResumed() {
+        createAutoSaveTimer();
+        for (Input i : inputs){
+            i.onResumed();
+        }
+    }
+
+    private void createAutoSaveTimer(){
+        mTimer = new Timer();
+        mTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                BaseController.this.saveConfig();
+            }
+        }, internalTime);
+    }
+
+    @Override
+    public int[] getLossenPointer(){
+        return client.getLoosenPointer();
+    }
+
+
 }
 
 

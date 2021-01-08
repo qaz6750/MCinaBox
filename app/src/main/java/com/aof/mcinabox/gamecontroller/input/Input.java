@@ -15,7 +15,13 @@ public interface Input {
 
     void saveConfig();
 
-    boolean isEnable();
+    boolean isEnabled();
 
-    void setEnable(boolean enable);
+    void setEnabled(boolean enabled);
+
+    void onPaused();
+
+    void onResumed();
+
+    Controller getController();
 }

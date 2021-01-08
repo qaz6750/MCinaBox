@@ -37,7 +37,6 @@ public class ItemBar implements OnscreenInput {
     private int screenWidth;
     private int screenHeight;
     private final ItemButton[] itemButtons = new ItemButton[9];
-    private boolean isGrabbed = false;
     private boolean enable;
     private ItembarConfigDialog configDialog;
 
@@ -93,13 +92,13 @@ public class ItemBar implements OnscreenInput {
     }
 
     @Override
-    public boolean isEnable() {
+    public boolean isEnabled() {
         return this.enable;
     }
 
     @Override
-    public void setEnable(boolean enable) {
-        this.enable = enable;
+    public void setEnabled(boolean enabled) {
+        this.enable = enabled;
         updateUI();
     }
 
@@ -108,7 +107,7 @@ public class ItemBar implements OnscreenInput {
         switch (visiablity) {
             case View.VISIBLE:
                 enable = true;
-                if (this.isGrabbed) {
+                if (mController.isGrabbed()) {
                     itemBar.setVisibility(visiablity);
                 }
                 break;
@@ -149,7 +148,6 @@ public class ItemBar implements OnscreenInput {
         } else {
             itemBar.setVisibility(View.INVISIBLE);
         }
-        this.isGrabbed = isGrabbed;
     }
 
     @Override
@@ -214,6 +212,21 @@ public class ItemBar implements OnscreenInput {
 
     public int getUiVisiability() {
         return itemBar.getVisibility();
+    }
+
+    @Override
+    public void onPaused() {
+
+    }
+
+    @Override
+    public void onResumed() {
+
+    }
+
+    @Override
+    public Controller getController() {
+        return this.mController;
     }
 
     private static class ItembarConfigDialog extends Dialog implements View.OnClickListener, Dialog.OnCancelListener, SeekBar.OnSeekBarChangeListener {

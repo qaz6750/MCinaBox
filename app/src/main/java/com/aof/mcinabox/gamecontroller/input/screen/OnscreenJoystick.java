@@ -82,7 +82,7 @@ public class OnscreenJoystick implements OnscreenInput, RockerView.OnShakeListen
     }
 
     @Override
-    public boolean isEnable() {
+    public boolean isEnabled() {
         return this.enable;
     }
 
@@ -262,14 +262,14 @@ public class OnscreenJoystick implements OnscreenInput, RockerView.OnShakeListen
     }
 
     @Override
-    public void setEnable(boolean enable) {
-        this.enable = enable;
+    public void setEnabled(boolean enabled) {
+        this.enable = enabled;
         updateUI();
     }
 
     private void updateUI() {
         if (enable) {
-            if (mController.getGrabbed()) {
+            if (mController.isGrabbed()) {
                 if (show == SHOW_ALL || show == SHOW_IN_GAME) {
                     this.setUiVisibility(View.VISIBLE);
                 } else {
@@ -320,6 +320,21 @@ public class OnscreenJoystick implements OnscreenInput, RockerView.OnShakeListen
 
     public void setAlpha(float a) {
         onscreenJoystick.setAlpha(a);
+    }
+
+    @Override
+    public void onPaused() {
+
+    }
+
+    @Override
+    public void onResumed() {
+
+    }
+
+    @Override
+    public Controller getController() {
+        return this.mController;
     }
 
     private static class OnscreenJoystickConfigDialog extends Dialog implements View.OnClickListener, Dialog.OnCancelListener, SeekBar.OnSeekBarChangeListener, CompoundButton.OnCheckedChangeListener {

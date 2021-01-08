@@ -54,32 +54,19 @@ public class Phone implements HwInput {
     }
 
     @Override
-    public void setEnable(boolean enable) {
-        this.enable = enable;
+    public void setEnabled(boolean enabled) {
+        this.enable = enabled;
     }
 
     @Override
-    public boolean isEnable() {
+    public boolean isEnabled() {
         return this.enable;
     }
 
     @Override
     public boolean onKey(KeyEvent event) {
         switch (event.getKeyCode()) {
-            case KeyEvent.KEYCODE_VOLUME_UP:
-                if (event.getAction() == KeyEvent.ACTION_UP) {
-                    adjustAudio(AudioManager.ADJUST_RAISE);
-                }
-                return true;
-            case KeyEvent.KEYCODE_VOLUME_DOWN:
-                if (event.getAction() == KeyEvent.ACTION_UP) {
-                    adjustAudio(AudioManager.ADJUST_LOWER);
-                }
-                return true;
             case KeyEvent.KEYCODE_BACK:
-                if (!event.getDevice().isVirtual()) {
-                    return false;
-                }
                 sendKeyEvent(KeyMap.KEYMAP_KEY_ESC, event);
                 return true;
             default:
@@ -120,5 +107,20 @@ public class Phone implements HwInput {
     private void adjustAudio(int direction) {
         AudioManager audioManager = (AudioManager) mContext.getSystemService(Service.AUDIO_SERVICE);
         audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, AudioManager.FLAG_SHOW_UI);
+    }
+
+    @Override
+    public void onPaused() {
+
+    }
+
+    @Override
+    public void onResumed() {
+
+    }
+
+    @Override
+    public Controller getController() {
+        return this.mController;
     }
 }

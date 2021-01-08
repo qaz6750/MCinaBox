@@ -8,6 +8,7 @@ import com.aof.mcinabox.gamecontroller.event.BaseKeyEvent;
 import com.aof.mcinabox.gamecontroller.input.Input;
 
 public interface Controller {
+
     void sendKey(BaseKeyEvent event);
 
     int getInputCounts();
@@ -30,12 +31,18 @@ public interface Controller {
 
     void onStop();
 
-    boolean getGrabbed();
+    boolean isGrabbed();
 
-    int[] getPointer();
+    int[] getGrabbedPointer();
+
+    int[] getLossenPointer();
 
     void saveConfig();
 
     Client getClient();
+
+    void onPaused();
+
+    void onResumed();
 }
 

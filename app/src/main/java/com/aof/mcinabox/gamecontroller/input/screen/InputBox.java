@@ -73,12 +73,12 @@ public class InputBox implements OnscreenInput, KeyMap, View.OnClickListener {
     }
 
     @Override
-    public boolean isEnable() {
+    public boolean isEnabled() {
         return this.enable;
     }
 
     @Override
-    public void setEnable(boolean e) {
+    public void setEnabled(boolean e) {
         this.enable = e;
         updateUI();
     }
@@ -206,7 +206,7 @@ public class InputBox implements OnscreenInput, KeyMap, View.OnClickListener {
 
     private void updateUI() {
         if (enable) {
-            if (mController.getGrabbed()) {
+            if (mController.isGrabbed()) {
                 if (show == SHOW_ALL || show == SHOW_IN_GAME) {
                     this.setUiVisibility(View.VISIBLE);
                 } else {
@@ -287,6 +287,21 @@ public class InputBox implements OnscreenInput, KeyMap, View.OnClickListener {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void onPaused() {
+
+    }
+
+    @Override
+    public void onResumed() {
+
+    }
+
+    @Override
+    public Controller getController() {
+        return this.mController;
     }
 
     class InputDialog extends Dialog implements View.OnClickListener {

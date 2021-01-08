@@ -61,7 +61,7 @@ public class RuntimeManager {
                         mDialog.dismiss();
                         break;
                     case 8:
-                        mDialog.setTotalTaskName("Unzipping Runtime pack...");
+                        mDialog.setTotalTaskName(context.getString(R.string.tips_unzipping_runtime_pack));
                         mDialog.setCurrentTaskName(filename);
                         break;
                 }
@@ -86,7 +86,7 @@ public class RuntimeManager {
                 }
                 File dir = new File(AppManifest.BOAT_RUNTIME_HOME);
                 if (!dir.exists()) {
-                    FileTool.makeFloder(dir.getAbsolutePath());
+                    FileTool.makeFolder(dir.getAbsolutePath());
                 }
                 BoatUtils.extractTarXZ(mpackagePath, AppManifest.BOAT_RUNTIME_HOME, new BoatUtils.CompressCallback() {
                     @Override

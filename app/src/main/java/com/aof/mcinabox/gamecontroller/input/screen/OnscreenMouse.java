@@ -132,13 +132,13 @@ public class OnscreenMouse implements OnscreenInput {
     }
 
     @Override
-    public boolean isEnable() {
+    public boolean isEnabled() {
         return this.enable;
     }
 
     @Override
-    public void setEnable(boolean enable) {
-        this.enable = enable;
+    public void setEnabled(boolean enabled) {
+        this.enable = enabled;
         updateUI();
     }
 
@@ -320,7 +320,7 @@ public class OnscreenMouse implements OnscreenInput {
 
     private void updateUI() {
         if (enable) {
-            if (mController.getGrabbed()) {
+            if (mController.isGrabbed()) {
                 if (show == SHOW_ALL || show == SHOW_IN_GAME) {
                     this.setUiVisibility(View.VISIBLE);
                 } else {
@@ -345,6 +345,21 @@ public class OnscreenMouse implements OnscreenInput {
     public void setShowStat(int s) {
         this.show = s;
         updateUI();
+    }
+
+    @Override
+    public void onPaused() {
+
+    }
+
+    @Override
+    public void onResumed() {
+
+    }
+
+    @Override
+    public Controller getController() {
+        return this.mController;
     }
 
     private static class OnscreenMouseConfigDialog extends Dialog implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, Dialog.OnCancelListener, CompoundButton.OnCheckedChangeListener {

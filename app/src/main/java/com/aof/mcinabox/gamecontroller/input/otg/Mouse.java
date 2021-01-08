@@ -2,7 +2,6 @@ package com.aof.mcinabox.gamecontroller.input.otg;
 
 import android.content.Context;
 import android.os.Build;
-import android.os.Handler;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -11,39 +10,34 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
-import androidx.annotation.RequiresApi;
-
 import com.aof.mcinabox.R;
 import com.aof.mcinabox.gamecontroller.codes.Translation;
 import com.aof.mcinabox.gamecontroller.controller.Controller;
-import com.aof.mcinabox.gamecontroller.definitions.map.KeyMap;
 import com.aof.mcinabox.gamecontroller.definitions.map.MouseMap;
 import com.aof.mcinabox.gamecontroller.event.BaseKeyEvent;
 import com.aof.mcinabox.gamecontroller.input.HwInput;
 import com.aof.mcinabox.utils.DisplayUtils;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import static com.aof.mcinabox.gamecontroller.definitions.id.key.KeyEvent.ANDROID_TO_KEYMAP;
-import static com.aof.mcinabox.gamecontroller.definitions.id.key.KeyEvent.KEYBOARD_BUTTON;
 import static com.aof.mcinabox.gamecontroller.definitions.id.key.KeyEvent.MOUSE_BUTTON;
 import static com.aof.mcinabox.gamecontroller.definitions.id.key.KeyEvent.MOUSE_POINTER;
+import static com.aof.mcinabox.gamecontroller.definitions.id.key.KeyEvent.MOUSE_POINTER_INC;
 
 public class Mouse implements HwInput {
 
     private final static String TAG = "Mouse";
     private final static int type2 = MOUSE_BUTTON;
-    private final static int type1 = MOUSE_POINTER;
-    private final static int CURSOR_SIZE = 16; //dp
-    private final static int CURSOR_EXTRA = 2; //D (x)
+    private final static int type1 = MOUSE_POINTER_INC;
+    private final static int CURSOR_EXTRA_RELEASE = 3; //times
+    private final static int CURSOR_EXTRA_GRABBED = 2; //times
 
     private Context mContext;
     private Controller mController;
     private boolean enable = false;
-    private boolean grabbed = false;
-    private Translation mTrans;
     private Object mCapturedPointerListener;
-    private ImageView cursor;
-    private int grabbed_x = 0;
-    private int grabbed_y = 0;
     private int screenWidth;
     private int screenHeight;
 
@@ -56,8 +50,6 @@ public class Mouse implements HwInput {
     public boolean load(Context context, Controller controller) {
         this.mContext = context;
         this.mController = controller;
-        //初始化键值翻译器
-        mTrans = new Translation(ANDROID_TO_KEYMAP);
         //设定鼠标监听器（SDK >= 26）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             mCapturedPointerListener = new View.OnCapturedPointerListener(){
@@ -69,64 +61,34 @@ public class Mouse implements HwInput {
             };
             mController.getClient().getViewsParent().setOnCapturedPointerListener((View.OnCapturedPointerListener) mCapturedPointerListener);
         }
-        //添加鼠标图标
-        cursor = new ImageView(mContext);
-        cursor.setLayoutParams(new ViewGroup.LayoutParams(DisplayUtils.getPxFromDp(mContext, CURSOR_SIZE), DisplayUtils.getPxFromDp(mContext, CURSOR_SIZE)));
-        cursor.setImageResource(R.drawable.cursor);
-        mController.getClient().addView(cursor);
-
-        screenWidth = context.getResources().getDisplayMetrics().widthPixels;
-        screenHeight = context.getResources().getDisplayMetrics().heightPixels;
-
+        //创建定时器
+        createTimer();
         return true;
     }
 
     @Override
     public boolean unload() {
-        return false;
+        cancelTimer();
+        return true;
     }
 
     @Override
     public void setGrabCursor(boolean isGrabbed) {
-        this.grabbed = isGrabbed;
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
-            //如果sdk版本大于O，则对鼠标获取或释放进行相应的操作
-            View v = mController.getClient().getViewsParent();
-            if(!v.hasPointerCapture()){
-                //捕获模式下，请求鼠标独占
-                v.setFocusable(true);
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        v.requestPointerCapture();
-                    }
-                }, 200);
-            }
-            //鼠标图标的显示或隐藏
-            if(grabbed)
-                cursor.setVisibility(View.INVISIBLE);
-            else
-                cursor.setVisibility(View.VISIBLE);
-        }
     }
 
     @Override
-    public void setEnable(boolean enable) {
-        this.enable = enable;
-        if(grabbed)
-            cursor.setVisibility(View.INVISIBLE);
-        else
-            cursor.setVisibility(View.VISIBLE);
+    public void setEnabled(boolean enabled) {
+        this.enable = enabled;
     }
 
     @Override
-    public boolean isEnable() {
+    public boolean isEnabled() {
         return this.enable;
     }
 
 
     //私有事件封装
-    private void sendPointer(int x, int y) {
+    private void sendPointerInc(int x, int y) {
         mController.sendKey(new BaseKeyEvent(TAG, null, false, type1, new int[]{x, y}));
     }
 
@@ -149,26 +111,19 @@ public class Mouse implements HwInput {
     //事件分发处理
     @Override
     public boolean onKey(KeyEvent event) {
-        Log.e(TAG, event.toString());
-        Log.e(TAG, event.getDevice().toString());
-        whenKeyPress(event);
-        return true;
+        return false;
     }
-
-
 
     @Override
     public boolean onMotionKey(MotionEvent event) {
-        //Log.e(TAG, event.toString());
-        //Log.e(TAG, event.getDevice().toString());
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
-            doMotion(event, grabbed);
+            doMotion(event);
         }
         return true;
     }
 
     //主要的控制逻辑处理
-    private void doMotion(MotionEvent event, boolean grabbed){
+    private void doMotion(MotionEvent event){
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O){
             return;
         }
@@ -193,25 +148,11 @@ public class Mouse implements HwInput {
             case MotionEvent.ACTION_HOVER_ENTER:
             case MotionEvent.ACTION_HOVER_MOVE:
             case MotionEvent.ACTION_HOVER_EXIT:
-                sendPointer((int) event.getX(), (int) event.getY());
-                break;
             case MotionEvent.ACTION_MOVE:
-                if(grabbed){
-                    sendPointer((int)event.getAxisValue(MotionEvent.AXIS_X) + mController.getPointer()[0], (int)event.getAxisValue(MotionEvent.AXIS_Y) + mController.getPointer()[1]);
+                if(mController.isGrabbed()){
+                    sendPointerInc((int)event.getAxisValue(MotionEvent.AXIS_X) * CURSOR_EXTRA_GRABBED , (int)event.getAxisValue(MotionEvent.AXIS_Y) * CURSOR_EXTRA_GRABBED);
                 }else{
-                    int x, y;
-                    x = grabbed_x + (int)event.getAxisValue(MotionEvent.AXIS_X) * CURSOR_EXTRA;
-                    y = grabbed_y + (int)event.getAxisValue(MotionEvent.AXIS_Y) * CURSOR_EXTRA;
-                    if(x < 0 || y < 0 || x > screenWidth || y > screenHeight)
-                        return;
-                    else{
-                        cursor.setX(x);
-                        cursor.setY(y);
-                        sendPointer(x, y);
-                        this.grabbed_x = x;
-                        this.grabbed_y = y;
-                    }
-
+                    sendPointerInc((int)event.getAxisValue(MotionEvent.AXIS_X) * CURSOR_EXTRA_RELEASE , (int)event.getAxisValue(MotionEvent.AXIS_Y) * CURSOR_EXTRA_RELEASE);
                 }
                 break;
         }
@@ -231,18 +172,62 @@ public class Mouse implements HwInput {
         }
     }
 
-    public void whenKeyPress(KeyEvent event){
-        //鼠标不处于捕获状态时，才能够产生KeyEvent事件
-        // TODO:这里不确定是否会产生KeyEvent，一般来说产生的是TouchEvent，需要测试
-        boolean pressed = false;
-        switch(event.getAction()){
-            case KeyEvent.ACTION_DOWN:
-            case KeyEvent.ACTION_UP:
-                pressed = true;
-                sendKeyEvent(mTrans.trans(event.getKeyCode()),pressed, type2);
-                break;
-            default:
+    @Override
+    public void onPaused() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            cancelTimer();
         }
     }
 
+    @Override
+    public void onResumed() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            createTimer();
+        }
+    }
+
+    @Override
+    public Controller getController() {
+        return this.mController;
+    }
+
+    private Timer mTimer;
+
+    private void createTimer(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            mTimer = new Timer();
+            mTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    if(!mController.getClient().getViewsParent().isFocusable())
+                        mController.getClient().getViewsParent().setFocusable(true);
+                    if(!mController.getClient().getViewsParent().hasPointerCapture()){
+                        mController.getClient().getViewsParent().requestPointerCapture();
+                    }
+                }
+            }, 0, 500);
+        }
+    }
+
+    private void cancelTimer(){
+        try {
+            mTimer.cancel();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    //鼠标加速分段算法
+    private float mouseAcceleration(float d){
+        float MAX_D = 0.05f;
+        float MAX_S = 1.2f;
+        float tmp = Math.abs(d);
+        int times = 1;
+        while(tmp >= MAX_D){
+            tmp %= MAX_D;
+            times++;
+        }
+        return (float) (d * Math.pow(MAX_S, times));
+
+    }
 }
