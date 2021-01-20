@@ -1,18 +1,13 @@
 package com.aof.mcinabox.gamecontroller.ckb;
 
-import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
-import android.util.AttributeSet;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.view.animation.DecelerateInterpolator;
 import android.widget.CompoundButton;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
@@ -33,21 +28,25 @@ import com.aof.mcinabox.gamecontroller.definitions.id.key.KeyEvent;
 import com.aof.mcinabox.gamecontroller.input.screen.CustomizeKeyboard;
 import com.aof.mcinabox.utils.PicUtils;
 
-public class CustomizeKeyboardEditorActivity extends AppCompatActivity implements View.OnClickListener, DrawerLayout.DrawerListener, CallCustomizeKeyboard, Client {
+import java.util.Timer;
+import java.util.TimerTask;
+
+public class CustomizeKeyboardEditorActivity extends AppCompatActivity implements View.OnSystemUiVisibilityChangeListener, View.OnClickListener, DrawerLayout.DrawerListener, CallCustomizeKeyboard, Client {
 
     private Toolbar mToolbar;
     private ViewGroup mLayout_main;
     private DrawerLayout mDrawerLayout;
-    //private DragFloatActionButton dButton;
     private AppCompatToggleButton toggleButtonMode;
-    //private CkbManagerDialog mDialog;
-    //private CkbManager mManager;
 
     private int screenWidth;
     private int screenHeight;
 
     private int pointer[] = new int[]{0, 0};
     private Controller mController;
+    private boolean isGrabbed;
+    private TimerTask systemUiTimerTask;
+    private Timer mTimer;
+    private final static int SYSTEM_UI_HIDE_DELAY_MS = 3000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +59,44 @@ public class CustomizeKeyboardEditorActivity extends AppCompatActivity implement
         screenWidth = this.getResources().getDisplayMetrics().widthPixels;
         screenHeight = this.getResources().getDisplayMetrics().heightPixels;
         initUI();
+
+        //窗口
+        getWindow().getDecorView().post(new Runnable() {
+            @Override
+            public void run() {
+                hideSystemUI(getWindow().getDecorView());
+                mTimer = new Timer();
+            }
+        });
+    }
+
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            View decorView = getWindow().getDecorView();
+            decorView.setOnSystemUiVisibilityChangeListener(this);
+            hideSystemUI(decorView);
+        } else {
+            View decorView = getWindow().getDecorView();
+            decorView.setOnSystemUiVisibilityChangeListener(null);
+            if (systemUiTimerTask != null) systemUiTimerTask.cancel();
+        }
+    }
+
+    @Override
+    public void onSystemUiVisibilityChange(int visibility) {
+        if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
+            if (systemUiTimerTask != null) systemUiTimerTask.cancel();
+            systemUiTimerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    runOnUiThread(() -> hideSystemUI(getWindow().getDecorView()));
+                }
+            };
+            mTimer.schedule(systemUiTimerTask, SYSTEM_UI_HIDE_DELAY_MS);
+        }
     }
 
     private void initUI() {
@@ -68,22 +105,6 @@ public class CustomizeKeyboardEditorActivity extends AppCompatActivity implement
         mLayout_main = findViewById(R.id.ckbe_layout_main);
         mDrawerLayout = findViewById(R.id.ckbe_drawerlayout);
         toggleButtonMode = findViewById(R.id.activity_ckbe_toggle_mode);
-        //dButton = new DragFloatActionButton(this);
-        //mManager = new CkbManager(this, this, null);
-        //mDialog = new CkbManagerDialog(this, mManager);
-
-        //配置悬浮按钮
-        /*ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(DisplayUtils.getPxFromDp(this, 30), DisplayUtils.getPxFromDp(this, 30));
-        this.addContentView(dButton, lp);
-        dButton.setBackground(ContextCompat.getDrawable(this, R.drawable.background_floatbutton));
-        dButton.setTodo(new ArrangeRule() {
-            @Override
-            public void run() {
-                mDialog.show();
-            }
-        });
-        dButton.setY((float) screenHeight / 2);
-         */
 
         //设定工具栏
         setSupportActionBar(mToolbar);
@@ -94,8 +115,10 @@ public class CustomizeKeyboardEditorActivity extends AppCompatActivity implement
         toggleButtonMode.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if(mController != null)
+                if (mController != null) {
                     mController.setGrabCursor(isChecked);
+                    CustomizeKeyboardEditorActivity.this.isGrabbed = isChecked;
+                }
             }
         });
 
@@ -103,18 +126,20 @@ public class CustomizeKeyboardEditorActivity extends AppCompatActivity implement
         mLayout_main.setBackground(new BitmapDrawable(getResources(), PicUtils.blur(this, 10, ((BitmapDrawable) ContextCompat.getDrawable(this, R.drawable.background)).getBitmap())));
 
         //初始化控制器
-        mController = new VirtualController(this, KeyEvent.KEYMAP_TO_X){
+        mController = new VirtualController(this, KeyEvent.KEYMAP_TO_X) {
             @Override
             public void init() {
                 super.init();
                 //移除屏幕触摸板
                 this.removeInput(onscreenTouchpad);
-                //卸载自定义键盘
-                this.removeInput(custmoizeKeyboard);
                 //禁用自定义键盘
                 this.custmoizeKeyboard.setEnabled(false);
+                //先保存键盘文件
+                ((CustomizeKeyboard)this.custmoizeKeyboard).mManager.autoSaveKeyboard();
+                //卸载自定义键盘
+                this.removeInput(custmoizeKeyboard);
                 //重写自定义键盘，并创建新的自定义键盘
-                this.custmoizeKeyboard = new CustomizeKeyboard(){
+                this.custmoizeKeyboard = new CustomizeKeyboard() {
                     @Override
                     public boolean load(Context context, Controller controller) {
                         //将编辑活动回调设置为当前活动，控制器设置为空对象
@@ -215,13 +240,11 @@ public class CustomizeKeyboardEditorActivity extends AppCompatActivity implement
         if (view.getLayoutParams() == null) {
             return;
         }
-        if (view.getLayoutParams() instanceof RelativeLayout.LayoutParams) {
-            this.mLayout_main.addView(view);
-        } else {
+        if (!(view.getLayoutParams() instanceof RelativeLayout.LayoutParams)) {
             RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(view.getLayoutParams().width, view.getLayoutParams().height);
             view.setLayoutParams(params);
-            this.mLayout_main.addView(view);
         }
+        this.mLayout_main.addView(view);
     }
 
     @Override
@@ -251,14 +274,13 @@ public class CustomizeKeyboardEditorActivity extends AppCompatActivity implement
 
     @Override
     public boolean isGrabbed() {
-        return mController.isGrabbed();
+        return this.isGrabbed;
     }
 
     @Override
     public void onStop() {
         super.onStop();
         //当Activity停止的时候自动保存键盘配置
-        //mManager.autoSaveKeyboard();
         mController.onStop();
     }
 
@@ -274,127 +296,15 @@ public class CustomizeKeyboardEditorActivity extends AppCompatActivity implement
         mController.onPaused();
     }
 
-    private static class DragFloatActionButton extends LinearLayout implements ViewGroup.OnTouchListener {
-
-        private static final String TAG = "DragButton";
-        private int parentHeight;
-        private int parentWidth;
-
-        private int lastX;
-        private int lastY;
-
-        private boolean isDrag;
-        private ViewGroup parent;
-
-        private ArrangeRule aRule;
-
-
-        public DragFloatActionButton(Context context) {
-            super(context);
-            this.setOnTouchListener(this);
-        }
-
-        public DragFloatActionButton(Context context, AttributeSet attrs) {
-            super(context, attrs);
-        }
-
-        public DragFloatActionButton(Context context, AttributeSet attrs, int defStyleAttr) {
-            super(context, attrs, defStyleAttr);
-        }
-
-        @Override
-        public boolean performClick() {
-            super.performClick();
-            return false;
-        }
-
-        public void behave(MotionEvent event) {
-            int rawX = (int) event.getRawX();
-            int rawY = (int) event.getRawY();
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    isDrag = false;
-                    this.setAlpha(0.9f);
-                    getParent().requestDisallowInterceptTouchEvent(true);
-                    lastX = rawX;
-                    lastY = rawY;
-                    if (getParent() != null) {
-                        parent = (ViewGroup) getParent();
-                        parentHeight = parent.getHeight();
-                        parentWidth = parent.getWidth();
-                    }
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    this.setAlpha(0.9f);
-                    int dx = rawX - lastX;
-                    int dy = rawY - lastY;
-                    int distance = (int) Math.sqrt(dx * dx + dy * dy);
-                    if (distance > 2 && !isDrag) {
-                        isDrag = true;
-                    }
-
-                    float x = getX() + dx;
-                    float y = getY() + dy;
-                    //检测是否到达边缘 左上右下
-                    x = x < 0 ? 0 : x > parentWidth - getWidth() ? parentWidth - getWidth() : x;
-                    y = getY() < 0 ? 0 : getY() + getHeight() > parentHeight ? parentHeight - getHeight() : y;
-                    setX(x);
-                    setY(y);
-                    lastX = rawX;
-                    lastY = rawY;
-                    break;
-                case MotionEvent.ACTION_UP:
-                    if (isDrag) {
-                        //恢复按压效果
-                        setPressed(false);
-                        moveHide(rawX);
-                    } else {
-                        //执行点击操作
-                        startTodo();
-                    }
-                    break;
-            }
-        }
-
-        private void moveHide(int rawX) {
-            if (rawX >= parentWidth / 2) {
-                //靠右吸附
-                ObjectAnimator oa = ObjectAnimator.ofFloat(this, "x", getX(), parentWidth - getWidth());
-                oa.setInterpolator(new DecelerateInterpolator());
-                oa.setDuration(500);
-                oa.start();
-            } else {
-                //靠左吸附
-                ObjectAnimator oa = ObjectAnimator.ofFloat(this, "x", getX(), 0);
-                oa.setInterpolator(new DecelerateInterpolator());
-                oa.setDuration(500);
-                oa.start();
-            }
-        }
-
-        @Override
-        public boolean onTouch(View v, MotionEvent event) {
-            if (v == this) {
-                this.behave(event);
-                return true;
-            }
-            return false;
-        }
-
-        public void setTodo(ArrangeRule ar) {
-            this.aRule = ar;
-        }
-
-        public void startTodo() {
-            if (aRule != null) {
-                aRule.run();
-            }
-        }
-    }
-
-    private static class ArrangeRule {
-        public void run() {
-            // Override this method.
-        }
+    private void hideSystemUI(View decorView) {
+        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE
+                // Set the content to appear under the system bars so that the
+                // content doesn't resize when the system bars hide and show.
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                // Hide the nav bar and status bar
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN);
     }
 }

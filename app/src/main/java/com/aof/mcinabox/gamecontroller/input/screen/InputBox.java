@@ -65,6 +65,8 @@ public class InputBox implements OnscreenInput, KeyMap, View.OnClickListener {
     private InputBoxConfigDialog configDialog;
 
     private boolean enable;
+    private int posX;
+    private int posY;
 
 
     @Override
@@ -90,7 +92,7 @@ public class InputBox implements OnscreenInput, KeyMap, View.OnClickListener {
 
     @Override
     public float[] getPos() {
-        return new float[]{inputBox.getX(), inputBox.getY()};
+        return new float[]{posX, posY};
     }
 
     @Override
@@ -98,6 +100,8 @@ public class InputBox implements OnscreenInput, KeyMap, View.OnClickListener {
         ViewGroup.LayoutParams p = inputBox.getLayoutParams();
         ((ViewGroup.MarginLayoutParams) p).setMargins(left, top, 0, 0);
         inputBox.setLayoutParams(p);
+        this.posX = left;
+        this.posY = top;
     }
 
     @Override
@@ -171,8 +175,8 @@ public class InputBox implements OnscreenInput, KeyMap, View.OnClickListener {
     public boolean load(Context context, Controller controller) {
         this.mContext = context;
         this.mController = controller;
-        screenWidth = context.getResources().getDisplayMetrics().widthPixels;
-        screenHeight = context.getResources().getDisplayMetrics().heightPixels;
+        screenWidth = mController.getConfig().getScreenWidth();
+        screenHeight = mController.getConfig().getScreenHeight();
 
         inputBox = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.virtual_inputbox, null);
         controller.addContentView(inputBox, new ViewGroup.LayoutParams(DisplayUtils.getPxFromDp(mContext, widthDp), DisplayUtils.getPxFromDp(mContext, heightDp)));
@@ -500,8 +504,8 @@ public class InputBox implements OnscreenInput, KeyMap, View.OnClickListener {
             //获取数据
             originalInputWidth = mInput.getSize()[0];
             originalInputHeight = mInput.getSize()[1];
-            screenWidth = mContext.getResources().getDisplayMetrics().widthPixels;
-            screenHeight = mContext.getResources().getDisplayMetrics().heightPixels;
+            screenWidth = mInput.getController().getConfig().getScreenWidth();
+            screenHeight = mInput.getController().getConfig().getScreenHeight();
 
             //初始化控件属性
             this.seekbarAlpha.setMax(MAX_ALPHA_PROGRESS);
@@ -729,10 +733,8 @@ public class InputBox implements OnscreenInput, KeyMap, View.OnClickListener {
             SharedPreferences.Editor editor = mContext.getSharedPreferences(spFileName, spMode).edit();
             editor.putInt(sp_alpha_name, seekbarAlpha.getProgress());
             editor.putInt(sp_size_name, seekbarSize.getProgress());
-            if (mInput.getUiVisiability() == View.VISIBLE) {
-                editor.putInt(sp_pos_x_name, (int) mInput.getPos()[0]);
-                editor.putInt(sp_pos_y_name, (int) mInput.getPos()[1]);
-            }
+            editor.putInt(sp_pos_x_name, (int) mInput.getPos()[0]);
+            editor.putInt(sp_pos_y_name, (int) mInput.getPos()[1]);
             editor.putInt(sp_show_name, ((InputBox) mInput).getShowStat());
             editor.putBoolean(sp_multi_line_name, cbMultiLine.isChecked());
             editor.apply();

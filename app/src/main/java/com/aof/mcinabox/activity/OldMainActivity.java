@@ -2,6 +2,8 @@ package com.aof.mcinabox.activity;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -68,8 +70,12 @@ public class OldMainActivity extends BaseActivity {
         mUiManager = new UiManager(this, Setting);
         //Life Circle
         mUiManager.onCreate();
+        //设置导航栏颜色
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setNavigationBarColor(Color.WHITE);
+        }
 
-        findViewById(R.id.new_ui).setOnClickListener(v -> {
+        findViewById(R.id.toolbar_button_new_ui).setOnClickListener(v -> {
             Intent i = new Intent(OldMainActivity.this, MainActivity.class);
             startActivity(i);
         });
@@ -79,8 +85,8 @@ public class OldMainActivity extends BaseActivity {
     protected void onStart() {
         super.onStart();
         //执行自动刷新
-        this.mTimer = new Timer();
-        this.mTimer.schedule(createTimerTask(), REFRESH_DELAY, REFRESH_PERIOD);
+        mTimer = new Timer();
+        this.mTimer.schedule(createRefreshTimerTask(), REFRESH_DELAY, REFRESH_PERIOD);
         //启用检查
         switchSettingChecker(true);
         //添加无媒体文件标签
@@ -207,14 +213,9 @@ public class OldMainActivity extends BaseActivity {
     public void onRestart() {
         super.onRestart();
         mUiManager.onRestart();
-        // stat Timer Task
-        this.mTimer = new Timer();
-        this.mTimer.schedule(createTimerTask(), REFRESH_DELAY, REFRESH_PERIOD);
-        //重新启动SettingManager的自动检查
-        switchSettingChecker(true);
     }
 
-    private TimerTask createTimerTask() {
+    private TimerTask createRefreshTimerTask() {
         return new TimerTask() {
             @Override
             public void run() {
@@ -226,12 +227,10 @@ public class OldMainActivity extends BaseActivity {
     }
 
     public void restarter() {
-        //首先要关闭SettingManager的自动检查
-        switchSettingChecker(false);
         //重启Activity
         Intent i = new Intent(this, OldMainActivity.class);
         this.startActivity(i);
-
+        //结束当前Activity
         finish();
     }
 

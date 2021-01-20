@@ -61,13 +61,15 @@ public class OnscreenKeyboard implements OnscreenInput {
     private final int[] OnscreenKeyboardPos = new int[2];
     private int screenWidth;
     private int screenHeight;
+    private int posX;
+    private int posY;
 
     @Override
     public boolean load(Context context, Controller controller) {
         this.mContext = context;
         this.mController = controller;
-        screenWidth = context.getResources().getDisplayMetrics().widthPixels;
-        screenHeight = context.getResources().getDisplayMetrics().heightPixels;
+        screenWidth = mController.getConfig().getScreenWidth();
+        screenHeight = mController.getConfig().getScreenHeight();
 
         onscreenKeyboard = (LinearLayout) LayoutInflater.from(mContext).inflate(R.layout.virtual_keyboard, null);
         mController.addContentView(onscreenKeyboard, new ViewGroup.LayoutParams(DisplayUtils.getPxFromDp(mContext, widthDp), DisplayUtils.getPxFromDp(mContext, heightDp)));
@@ -218,7 +220,7 @@ public class OnscreenKeyboard implements OnscreenInput {
 
     @Override
     public float[] getPos() {
-        return (new float[]{onscreenKeyboard.getX(), onscreenKeyboard.getY()});
+        return (new float[]{posX, posY});
     }
 
     @Override
@@ -226,6 +228,8 @@ public class OnscreenKeyboard implements OnscreenInput {
         ViewGroup.LayoutParams p = onscreenKeyboard.getLayoutParams();
         ((ViewGroup.MarginLayoutParams) p).setMargins(left, top, 0, 0);
         onscreenKeyboard.setLayoutParams(p);
+        this.posX = left;
+        this.posY = top;
     }
 
     @Override
@@ -305,9 +309,7 @@ public class OnscreenKeyboard implements OnscreenInput {
                 v.postInvalidate();
                 break;
             case MotionEvent.ACTION_UP:
-                ViewGroup.LayoutParams p = onscreenKeyboard.getLayoutParams();
-                ((ViewGroup.MarginLayoutParams) p).setMargins(onscreenKeyboard.getLeft(), onscreenKeyboard.getTop(), 0, 0);
-                onscreenKeyboard.setLayoutParams(p);
+                setMargins(v.getLeft(), v.getTop(), 0, 0);
                 break;
             default:
                 break;
@@ -449,8 +451,8 @@ public class OnscreenKeyboard implements OnscreenInput {
 
             originalInputWidth = mInput.getSize()[0];
             originalInputHeight = mInput.getSize()[1];
-            screenWidth = mContext.getResources().getDisplayMetrics().widthPixels;
-            screenHeight = mContext.getResources().getDisplayMetrics().heightPixels;
+            screenWidth = mInput.getController().getConfig().getScreenWidth();
+            screenHeight = mInput.getController().getConfig().getScreenHeight();
 
             //初始化控件属性
             this.seekbarAlpha.setMax(MAX_ALPHA_PROGRESS);
@@ -617,10 +619,8 @@ public class OnscreenKeyboard implements OnscreenInput {
             SharedPreferences.Editor editor = mContext.getSharedPreferences(spFileName, spMode).edit();
             editor.putInt(sp_alpha_name, seekbarAlpha.getProgress());
             editor.putInt(sp_size_name, seekbarSize.getProgress());
-            if (mInput.getUiVisiability() == View.VISIBLE) {
-                editor.putInt(sp_pos_x_name, (int) mInput.getPos()[0]);
-                editor.putInt(sp_pos_y_name, (int) mInput.getPos()[1]);
-            }
+            editor.putInt(sp_pos_x_name, (int) mInput.getPos()[0]);
+            editor.putInt(sp_pos_y_name, (int) mInput.getPos()[1]);
             editor.putInt(sp_show_name, ((OnscreenKeyboard) mInput).getShowStat());
             editor.apply();
         }

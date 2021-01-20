@@ -56,6 +56,8 @@ public class OnscreenJoystick implements OnscreenInput, RockerView.OnShakeListen
 
     private final static int widthDp = 200;
     private final static int heightDp = 200;
+    private int posX;
+    private int posY;
 
 
     private final static String TAG = "OnscreenJoystick";
@@ -78,7 +80,7 @@ public class OnscreenJoystick implements OnscreenInput, RockerView.OnShakeListen
 
     @Override
     public float[] getPos() {
-        return (new float[]{onscreenJoystick.getX(), onscreenJoystick.getY()});
+        return (new float[]{posX, posY});
     }
 
     @Override
@@ -91,6 +93,8 @@ public class OnscreenJoystick implements OnscreenInput, RockerView.OnShakeListen
         ViewGroup.LayoutParams p = onscreenJoystick.getLayoutParams();
         ((ViewGroup.MarginLayoutParams) p).setMargins(left, top, 0, 0);
         onscreenJoystick.setLayoutParams(p);
+        this.posX = left;
+        this.posY = top;
     }
 
     @Override
@@ -157,9 +161,7 @@ public class OnscreenJoystick implements OnscreenInput, RockerView.OnShakeListen
                 v.postInvalidate();
                 break;
             case MotionEvent.ACTION_UP:
-                ViewGroup.LayoutParams p = v.getLayoutParams();
-                ((ViewGroup.MarginLayoutParams) p).setMargins(v.getLeft(), v.getTop(), 0, 0);
-                v.setLayoutParams(p);
+                setMargins(v.getLeft(), v.getTop(), 0, 0);
                 break;
             default:
                 break;
@@ -170,8 +172,8 @@ public class OnscreenJoystick implements OnscreenInput, RockerView.OnShakeListen
     public boolean load(Context context, Controller controller) {
         this.mContext = context;
         this.mController = controller;
-        screenWidth = context.getResources().getDisplayMetrics().widthPixels;
-        screenHeight = context.getResources().getDisplayMetrics().heightPixels;
+        screenWidth = mController.getConfig().getScreenWidth();
+        screenHeight = mController.getConfig().getScreenHeight();
 
         onscreenJoystick = (LinearLayout) LayoutInflater.from(mContext).inflate(R.layout.virtual_joystick, null);
         mController.addContentView(onscreenJoystick, new ViewGroup.LayoutParams(DisplayUtils.getPxFromDp(mContext, widthDp), DisplayUtils.getPxFromDp(mContext, heightDp)));
@@ -409,8 +411,8 @@ public class OnscreenJoystick implements OnscreenInput, RockerView.OnShakeListen
             }
 
             originalInputSize = mInput.getSize()[0];
-            screenWidth = mContext.getResources().getDisplayMetrics().widthPixels;
-            screenHeight = mContext.getResources().getDisplayMetrics().heightPixels;
+            screenWidth = mInput.getController().getConfig().getScreenWidth();
+            screenHeight = mInput.getController().getConfig().getScreenHeight();
 
             //初始化控件属性
             this.seekbarAlpha.setMax(MAX_ALPHA_PROGRESS);
@@ -536,10 +538,8 @@ public class OnscreenJoystick implements OnscreenInput, RockerView.OnShakeListen
             SharedPreferences.Editor editor = mContext.getSharedPreferences(spFileName, spMode).edit();
             editor.putInt(sp_alpha_name, seekbarAlpha.getProgress());
             editor.putInt(sp_size_name, seekbarSize.getProgress());
-            if (mInput.getUiVisiability() == View.VISIBLE) {
-                editor.putInt(sp_pos_x_name, (int) mInput.getPos()[0]);
-                editor.putInt(sp_pos_y_name, (int) mInput.getPos()[1]);
-            }
+            editor.putInt(sp_pos_x_name, (int) mInput.getPos()[0]);
+            editor.putInt(sp_pos_y_name, (int) mInput.getPos()[1]);
             editor.putInt(sp_show_name, ((OnscreenJoystick) mInput).getShowStat());
             editor.apply();
         }

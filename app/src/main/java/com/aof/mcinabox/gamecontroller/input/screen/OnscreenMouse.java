@@ -88,12 +88,15 @@ public class OnscreenMouse implements OnscreenInput {
     private boolean hasHeld = false;
     private Timer mTimer;
 
+    private int posX;
+    private int posY;
+
     @Override
     public boolean load(Context context, Controller controller) {
         this.mContext = context;
         this.mController = controller;
-        screenWidth = context.getResources().getDisplayMetrics().widthPixels;
-        screenHeight = context.getResources().getDisplayMetrics().heightPixels;
+        screenWidth = mController.getConfig().getScreenWidth();
+        screenHeight = mController.getConfig().getScreenHeight();
 
         onscreenMouse = (LinearLayout) LayoutInflater.from(mContext).inflate(R.layout.virtual_mouse, null);
         mController.addContentView(onscreenMouse, new ViewGroup.LayoutParams(DisplayUtils.getPxFromDp(mContext, widthDp), DisplayUtils.getPxFromDp(mContext, heightDp)));
@@ -218,7 +221,7 @@ public class OnscreenMouse implements OnscreenInput {
 
     @Override
     public float[] getPos() {
-        return (new float[]{onscreenMouse.getX(), onscreenMouse.getY()});
+        return (new float[]{posX, posY});
     }
 
     @Override
@@ -226,6 +229,8 @@ public class OnscreenMouse implements OnscreenInput {
         ViewGroup.LayoutParams p = onscreenMouse.getLayoutParams();
         ((ViewGroup.MarginLayoutParams) p).setMargins(left, top, 0, 0);
         onscreenMouse.setLayoutParams(p);
+        this.posX = left;
+        this.posY = top;
     }
 
     @Override
@@ -287,9 +292,7 @@ public class OnscreenMouse implements OnscreenInput {
                 p2.postInvalidate();
                 break;
             case MotionEvent.ACTION_UP:
-                ViewGroup.LayoutParams p = onscreenMouse.getLayoutParams();
-                ((ViewGroup.MarginLayoutParams) p).setMargins(onscreenMouse.getLeft(), onscreenMouse.getTop(), 0, 0);
-                onscreenMouse.setLayoutParams(p);
+                setMargins(p2.getLeft(), p2.getTop(), 0, 0);
                 break;
             default:
                 break;
@@ -444,8 +447,8 @@ public class OnscreenMouse implements OnscreenInput {
 
             originalInputWidth = mInput.getSize()[0];
             originalInputHeight = mInput.getSize()[1];
-            screenWidth = mContext.getResources().getDisplayMetrics().widthPixels;
-            screenHeight = mContext.getResources().getDisplayMetrics().heightPixels;
+            screenWidth = mInput.getController().getConfig().getScreenWidth();
+            screenHeight = mInput.getController().getConfig().getScreenHeight();
 
             //初始化控件属性
             this.seekbarAlpha.setMax(MAX_ALPHA_PROGRESS);
@@ -624,10 +627,8 @@ public class OnscreenMouse implements OnscreenInput {
             editor.putInt(sp_alpha_name, seekbarAlpha.getProgress());
             editor.putInt(sp_size_name, seekbarSize.getProgress());
             editor.putInt(sp_wheel_speed_name, seekbarWheelSpeed.getProgress());
-            if (mInput.getUiVisiability() == View.VISIBLE) {
-                editor.putInt(sp_pos_x_name, (int) mInput.getPos()[0]);
-                editor.putInt(sp_pos_y_name, (int) mInput.getPos()[1]);
-            }
+            editor.putInt(sp_pos_x_name, (int) mInput.getPos()[0]);
+            editor.putInt(sp_pos_y_name, (int) mInput.getPos()[1]);
             editor.putInt(sp_show_name, ((OnscreenMouse) mInput).getShowStat());
             editor.apply();
         }

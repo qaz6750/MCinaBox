@@ -6,10 +6,10 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
-import android.view.SurfaceHolder;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -37,6 +37,7 @@ public class BoatActivity extends AppCompatActivity implements View.OnSystemUiVi
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         nOnCreate();
 
         if (!nIsLoaded()) {
@@ -91,12 +92,11 @@ public class BoatActivity extends AppCompatActivity implements View.OnSystemUiVi
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
+        View decorView = getWindow().getDecorView();
         if (hasFocus) {
-            View decorView = getWindow().getDecorView();
             decorView.setOnSystemUiVisibilityChangeListener(this);
             hideSystemUI(decorView);
         } else {
-            View decorView = getWindow().getDecorView();
             decorView.setOnSystemUiVisibilityChangeListener(null);
             if (systemUiTimerTask != null) systemUiTimerTask.cancel();
         }
@@ -196,7 +196,7 @@ public class BoatActivity extends AppCompatActivity implements View.OnSystemUiVi
         new Thread() {
             @Override
             public void run() {
-                LoadMe.exec(boatArgs);
+                new LoadMe().exec(boatArgs);
             }
         }.start();
     }

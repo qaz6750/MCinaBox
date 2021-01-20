@@ -46,6 +46,8 @@ public class CkbManager {
     private GameButtonArray<GameButton> buttonList;
 
     private int buttonMode = GameButton.MODE_MOVEABLE_EDITABLE;
+    private int displayWidth;
+    private int displayHeight;
 
     public CkbManager(@NonNull Context context, @NonNull CallCustomizeKeyboard call, Controller controller) {
         super();
@@ -55,13 +57,21 @@ public class CkbManager {
         init();
     }
 
+    public int[] getDisplaySize(){
+        return new int[]{displayWidth, displayHeight};
+    }
+
     private void init() {
 
         //初始化按键列表
         buttonList = new GameButtonArray<>();
+
+        //初始化显示范围
+        displayWidth = DisplayUtils.checkDeviceHasNavigationBar(mContext) ? DisplayUtils.getApplicationWindowSize(mContext)[0] + DisplayUtils.getNavigationBarHeight(mContext) : DisplayUtils.getApplicationWindowSize(mContext)[0];
+        displayHeight = DisplayUtils.getApplicationWindowSize(mContext)[1];
+
         //当Manager初始化的时候自动加载键盘布局
         autoLoadKeyboard();
-
     }
 
     public Controller getController() {
@@ -207,8 +217,7 @@ public class CkbManager {
         loadKeyboard(LAST_KEYBOARD_LAYOUT_NAME + ".json");
     }
 
-    public boolean loadKeyboard(String fileName) {
-        File file = new File(AppManifest.MCINABOX_KEYBOARD + "/" + fileName);
+    public boolean loadKeyboard(File file){
         if (!file.exists()) {
             return false;
         }
@@ -226,7 +235,7 @@ public class CkbManager {
                 public void runWhenPositive() {
                     super.runWhenPositive();
                     if(new GameButtonConverter(mContext).output(file)){
-                        DialogUtils.createSingleChoiceDialog(mContext, mContext.getString(R.string.title_note), String.format(mContext.getString(R.string.tips_successed_to_convert_keyboard_file), fileName + "-new.json"), mContext.getString(R.string.title_ok), null);
+                        DialogUtils.createSingleChoiceDialog(mContext, mContext.getString(R.string.title_note), String.format(mContext.getString(R.string.tips_successed_to_convert_keyboard_file), file.getName() + "-new.json"), mContext.getString(R.string.title_ok), null);
                     }else{
                         DialogUtils.createSingleChoiceDialog(mContext, mContext.getString(R.string.title_note), mContext.getString(R.string.tips_failed_to_convert_keyboard_file), mContext.getString(R.string.title_ok), null);
                     }
@@ -234,6 +243,16 @@ public class CkbManager {
             });
             return false;
         }
+        loadKeyboard(kr);
+        return true;
+    }
+
+    public boolean loadKeyboard(String fileName) {
+        File file = new File(AppManifest.MCINABOX_KEYBOARD + "/" + fileName);
+        return loadKeyboard(file);
+    }
+
+    public boolean loadKeyboard(KeyboardRecorder kr){
         GameButtonRecorder[] gbr;
         if (kr != null) {
             gbr = kr.getRecorderDatas();

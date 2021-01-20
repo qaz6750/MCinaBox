@@ -5,6 +5,15 @@ android {
     compileSdkVersion 30
     buildToolsVersion '30.0.2'
 
+    signingConfigs {
+        debug {
+            storeFile file('../.github/workflows/debugKeyStore.jks')
+            keyAlias 'mcinabox'
+            storePassword '123456'
+            keyPassword '123456'
+        }
+    }
+
     defaultConfig {
         applicationId "com.aof.mcinabox"
         minSdkVersion 21
@@ -27,6 +36,13 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
     }
 }
 
